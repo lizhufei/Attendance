@@ -86,7 +86,7 @@ class Attendance extends Model
      * @param int $data
      * @param $company_id
      */
-    protected function store(string $device_sn, int $person_id, string $dateTime, int $data, $company_id)
+    protected function store(string $device_sn, int $person_id, string $dateTime, int $data, $company_id, int $mask=0, $temperature=0)
     {
         $date = explode(' ', $dateTime);
         $fields = $this->where('person_id', $person_id)
@@ -100,6 +100,8 @@ class Attendance extends Model
             }else{
                 $fields->off_duty = $data;
             }
+            $fields->mask = $mask;
+            $fields->temperature = $temperature;
             $this->regime[$data]['device_sn'] = $device_sn;
             $fields->describe[] = $this->regime[$data];
             return $fields->save();
@@ -108,6 +110,8 @@ class Attendance extends Model
                 'person_id' => $person_id,
                 'date' => $date[0],
                 'company_id' => $company_id,
+                'temperature' => $temperature,
+                'mask' => $mask
             ];
             if (Attendance::ABSENT_CLOCK == $data){
                 $fields['status'] = 1;

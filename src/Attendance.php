@@ -37,7 +37,9 @@ class Attendance
                         $person->id,
                         $dateTime,
                         $result,
-                        $company
+                        $company,
+                        $face->mask??0,
+                        $face->temperature??0
                     );
         }
         return false;
