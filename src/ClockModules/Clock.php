@@ -75,22 +75,23 @@ class Clock
     /**
      * 打卡状态
      * @param int $person_id
-     * @param int $company_id
+     * @param string $device_sn
+     * @param int|null $company_id
      * @return int
      */
-    public function state(int $person_id, int $company_id=null)
+    public function state(int $person_id, string $device_sn)
     {
         //迟到半天算旷工
         //是否第一次打卡来判断是上班还是下班
         $clock_time = $this->day->toDateTimeString();
-        if (Attendance::isFirst($person_id, $clock_time, $company_id)){
+        if (Attendance::isFirst($person_id, $clock_time, $this->company_id)){
             //下班卡
             if ($this->day->gte($this->off) && $this->day->lte($this->finish)){
-                event(new OffdutyEvent($person_id, $clock_time));   //下班打卡事件
+                event(new OffdutyEvent($person_id, $clock_time, $device_sn));   //下班打卡事件
                 return Attendance::FINISH_CLOCK; //下班卡
             }
         }else{
-            event(new OndutyEvent($person_id, $clock_time)); //上班打卡事件
+            event(new OndutyEvent($person_id, $clock_time, $device_sn)); //上班打卡事件
             //上班卡
             if ($this->day->lte($this->on)){
                 return Attendance::NORMAL_CLOCK; //上班正常卡
@@ -101,7 +102,7 @@ class Clock
                 return Attendance::LASE_CLOCK;  //迟到卡
             }
         }
-        event(new UndergoEvent($person_id, $clock_time));  //离岗事件
+        event(new UndergoEvent($person_id, $clock_time, $device_sn));  //离岗事件
         return Attendance::INVALID_CLOCK; //无效卡
     }
 }

@@ -28,7 +28,7 @@ class Attendance
             return false;
         }
         if ($clock->isScope()){
-            $result = $clock->state($person->id, $company);
+            $result = $clock->state($person->id, $face->device_sn);
 
             return \Hsvisus\Attendance\Models\Attendance::INVALID_CLOCK == $result
                 ? false
