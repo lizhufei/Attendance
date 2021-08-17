@@ -17,7 +17,7 @@ class CreateAttendancesTable extends Migration
             Schema::create('attendances', function (Blueprint $table) {
                 $table->id();
                 $table->bigInteger('person_id')->comment('职员ID');
-                $table->char('device_sn', 50)->nullable()->comment('设备SN');
+//                $table->char('device_sn', 50)->nullable()->comment('设备SN');
 //                $table->bigInteger('face_id')->comment('刷脸ID');
                 $table->tinyInteger('on_duty')->default(2)->comment('上班');
                 $table->tinyInteger('off_duty')->default(6)->comment('下班');

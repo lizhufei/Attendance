@@ -5,6 +5,7 @@ namespace Hsvisus\Attendance\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Attendance extends Model
 {
@@ -68,14 +69,31 @@ class Attendance extends Model
      * @param int $company_id
      * @return bool
      */
-    protected function isFirst(int $person_id, string $date, int $company_id):bool
+    protected function isFirst(int $person_id, string $date, $company_id):bool
     {
         return $this->where('person_id', $person_id)
             ->when($company_id, function($q)use($company_id){
                 $q->where('company_id', $company_id);
             })
-            ->whereDte('date', $date)
+            ->whereDate('date', substr($date,0,10))
             ->exists();
+    }
+
+    /**
+     * 获取指定记录
+     * @param int $person_id
+     * @param string $date
+     * @param $company_id
+     * @return mixed
+     */
+    protected function getSign(int $person_id, string $date, $company_id)
+    {
+        return $this->where('person_id', $person_id)
+            ->when($company_id, function($q)use($company_id){
+                $q->where('company_id', $company_id);
+            })
+            ->whereDate('date', substr($date,0,10))
+            ->first();
     }
 
     /**
@@ -86,12 +104,12 @@ class Attendance extends Model
      * @param int $data
      * @param $company_id
      */
-    protected function store(string $device_sn, int $person_id, string $dateTime, int $data, $company_id, int $mask=0, $temperature=0)
+    protected function store(string $device_sn, int $person_id, string $date, int $data, $company_id, int $mask=0, $temperature=0)
     {
-        $date = explode(' ', $dateTime);
         $fields = $this->where('person_id', $person_id)
-            ->whereData('date', $date[0])
+            ->whereDate('date', substr($date,0,10))
             ->first();
+
         if ($fields){
             if (Attendance::ABSENT_CLOCK == $data){
                 $fields->status = 0;
@@ -103,12 +121,16 @@ class Attendance extends Model
             $fields->mask = $mask;
             $fields->temperature = $temperature;
             $this->regime[$data]['device_sn'] = $device_sn;
-            $fields->describe[] = $this->regime[$data];
+            $tmpData = $fields->describe;
+            $this->regime[$data]['device_sn'] = $device_sn;
+            $this->regime[$data]['time'] = substr($date,11,8);
+            $tmpData[] = $this->regime[$data];
+            $fields->describe = $tmpData;
             return $fields->save();
         }else{
             $fields = [
                 'person_id' => $person_id,
-                'date' => $date[0],
+                'date' => $date,
                 'company_id' => $company_id,
                 'temperature' => $temperature,
                 'mask' => $mask
@@ -121,7 +143,7 @@ class Attendance extends Model
                 $fields['off_duty'] = $data;
             }
             $this->regime[$data]['device_sn'] = $device_sn;
-            $this->regime[$data]['time'] = $date[1];
+            $this->regime[$data]['time'] = substr($date,11,8);
             $fields['describe'][] = $this->regime[$data];
             return $this->create($fields);
         }
@@ -147,7 +169,7 @@ class Attendance extends Model
      * @param int|null $company_id
      * @return array
      */
-    protected function statement(string $month, int $company_id=null)
+    protected function statement(string $month, $company_id=null)
     {
         $attendances = $this->whereMonth('date', $month)
             ->when($company_id, function($q)use($company_id){

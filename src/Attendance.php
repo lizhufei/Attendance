@@ -4,12 +4,15 @@
 namespace Hsvisus\Attendance;
 
 
+use Carbon\Carbon;
 use Hsvisus\Attendance\ClockModules\Clock;
 use Hsvisus\Attendance\ClockModules\Holiday;
+use Hsvisus\Attendance\Models\Rule;
 use Hsvisus\Attendance\Models\Statistic;
 use Hsvisus\Attendance\StatisticModules\Personal;
 use Hsvisus\Attendance\StatisticModules\Report;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class Attendance
 {
@@ -17,25 +20,31 @@ class Attendance
      * 审核打卡时间
      * @param Model $person
      * @param Model $face
-     * @return array
+     * @return
      */
-    public function auditClock(Model $person, Model $face):array
+    public function auditClock(Model $person, Model $face)
     {
-        $dateTime = $face->screen_time;
+        $current = Carbon::parse($face->screen_time);
         $company = $person->company_id??null;
-        $clock = new Clock($dateTime, $company);
+        $rule = Rule::getRule($current->dayOfWeek, $company);
+        if (empty($rule)){
+            Log::info("没有设定考勤规则{}".date('Y-m-d H:i:s'));
+            return false;
+        }
+        $clock = new Clock($current, $rule, $company);
         if ($clock->isRest()){
             return false;
         }
+
         if ($clock->isScope()){
-            $result = $clock->state($person->id, $face->device_sn);
+            $result = $clock->state($person->id, $face->device_sn);//dd($result);
 
             return \Hsvisus\Attendance\Models\Attendance::INVALID_CLOCK == $result
                 ? false
                 : \Hsvisus\Attendance\Models\Attendance::store(
                         $face->device_sn,
                         $person->id,
-                        $dateTime,
+                        $current->toDateTimeString(),
                         $result,
                         $company,
                         $face->mask??0,

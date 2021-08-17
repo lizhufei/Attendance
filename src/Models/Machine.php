@@ -22,7 +22,7 @@ class Machine extends Model
      * @param int|null $company_id
      * @return array|null
      */
-    protected function same(int $type=2, int $company_id=null)
+    protected function same(int $type=2, $company_id=null)
     {
         return $this->where('type', $type)
             ->when($company_id, function($q)use($company_id){

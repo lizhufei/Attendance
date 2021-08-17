@@ -25,21 +25,21 @@ class Clock
     private $on;
     private $off;
 
-    public function __construct(string $day, int $company_id=null)
+    public function __construct(Carbon $day, Rule $rule, int $company_id=null)
     {
-        $this->day = Carbon::parse($day);
+        $this->day = $day;
         $this->company_id = $company_id;
-        $this->rule = Rule::getRule($day, $company_id);
+        $this->rule = $rule;
         //上班时间
-        $this->on = Carbon::parse($this->rule->on);
+        $this->on = Carbon::parse($rule->on);
         //下班时间
-        $this->off = Carbon::parse($this->rule->on);
+        $this->off = Carbon::parse($rule->off);
         //上班打卡开始时间
-        $this->begin = Carbon::parse($this->rule->on-star);
+        $this->begin = Carbon::parse($rule->on_star);
         //上班打卡结束时间
-        $this->end = Carbon::parse($this->rule->on-end);
+        $this->end = Carbon::parse($rule->on_end);
         //下班结束时间
-        $this->finish = Carbon::parse($this->rule->delay?:'59:59:59');
+        $this->finish = Carbon::parse($rule->delay?:'23:59:59');
 
     }
     /**
@@ -84,9 +84,13 @@ class Clock
         //迟到半天算旷工
         //是否第一次打卡来判断是上班还是下班
         $clock_time = $this->day->toDateTimeString();
-        if (Attendance::isFirst($person_id, $clock_time, $this->company_id)){
+
+        if ($sign = Attendance::getSign($person_id, $clock_time, $this->company_id)){
             //下班卡
             if ($this->day->gte($this->off) && $this->day->lte($this->finish)){
+                if (Attendance::OFF_LACK_CLOCK != $sign->off_duty){
+                    return Attendance::INVALID_CLOCK; //无效卡
+                }
                 event(new OffdutyEvent($person_id, $clock_time, $device_sn));   //下班打卡事件
                 return Attendance::FINISH_CLOCK; //下班卡
             }

@@ -34,7 +34,7 @@ class Rule extends Model
      * @param int $company_id
      * @return mixed
      */
-    protected function getRule(string $week, int $company_id)
+    protected function getRule(string $week, $company_id=null)
     {
         return $this->where('week', $week)
             ->when($company_id, function($q)use($company_id){
