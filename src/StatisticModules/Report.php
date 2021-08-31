@@ -12,6 +12,12 @@ use Hsvisus\Attendance\Models\Rule;
 
 class Report
 {
+    /**
+     * 月报表
+     * @param string $month
+     * @param int|null $company_id
+     * @return array
+     */
     public function statement(string $month='', int $company_id=null)
     {
         if (empty($month)){

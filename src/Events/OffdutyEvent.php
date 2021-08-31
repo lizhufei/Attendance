@@ -12,9 +12,9 @@ class OffdutyEvent
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    private $pid;
-    private $time;
-    private $sn;
+    public $pid;
+    public $time;
+    public $sn;
 
     /**
      * 创建一个事件实例
